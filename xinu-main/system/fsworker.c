@@ -51,7 +51,7 @@ process fs_worker(
     byte  flags;
     uint32 latency, cs_ticks;
 
-    fd = open(NAMESPACE, filename, "rw");
+    fd = open(LFILESYS, filename, "rw");
     
     // Record an error sample for open failure
     if (fd == SYSERR) {
