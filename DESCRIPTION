@@ -1,5 +1,4 @@
-This directory holds Xinu sources for the Galileo. This version is specifically
-for students in CSCI 8530 at the University of Nebraska at Omaha. 
+This directory holds Xinu sources for the Galileo. 
 
 It is a modification of the Purdue Xinu distribution for the Galileo.
 Specifically, it deals with the possibility that (a) there is no Ethernet link,
