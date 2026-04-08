@@ -6,24 +6,30 @@
  * lflwrite  --  Write data to a previously opened local disk file
  *------------------------------------------------------------------------
  */
-devcall	lflwrite (
-	  struct dentry *devptr,	/* Entry in device switch table */
-	  char	*buff,			/* Buffer holding data to write	*/
-	  int32	count			/* Number of bytes to write	*/
-	)
+devcall lflwrite(
+      struct dentry *devptr,
+      char *buff,
+      int32 count
+    )
 {
-	int32		i;		/* Number of bytes written	*/
+    int32           i;
+    struct lflcblk *lfptr;
 
-	if (count < 0) {
-		return SYSERR;
-	}
+    if (count < 0) {
+        return SYSERR;
+    }
 
-	/* Iteratate and write one byte at a time */
+    lfptr = &lfltab[devptr->dvminor];
+    wait(lfptr->lfmutex);
 
-	for (i=0; i<count; i++) {
-		if (lflputc(devptr, *buff++) == SYSERR) {
-			return SYSERR;
-		}
-	}
-	return count;
+    for (i = 0; i < count; i++) {
+        if (lflputc(devptr, *buff++) == SYSERR) {
+            signal(lfptr->lfmutex);
+            return SYSERR;
+        }
+    }
+
+    signal(lfptr->lfmutex);
+    return count;
 }
+

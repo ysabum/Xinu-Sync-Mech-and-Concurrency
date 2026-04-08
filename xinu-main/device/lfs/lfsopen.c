@@ -1,200 +1,215 @@
 /* lfsopen.c - lfsopen */
 
 #include <xinu.h>
+#include "fsbench.h"
 
 /*------------------------------------------------------------------------
  * lfsopen - Open a file and allocate a local file pseudo-device
  *------------------------------------------------------------------------
  */
-devcall	lfsopen (
-	 struct	dentry	*devptr,	/* Entry in device switch table	*/
-	 char	*name,			/* Name of file to open		*/
-	 char	*mode			/* Mode chars: 'r' 'w' 'o' 'n'	*/
-	)
+devcall lfsopen(
+         struct dentry *devptr,   /* Entry in device switch table */
+         char *name,              /* Name of file to open         */
+         char *mode               /* Mode chars: 'r' 'w' 'o' 'n'  */
+        )
 {
-	struct	lfdir	*dirptr;	/* Ptr to in-memory directory	*/
-	char		*from, *to;	/* Ptrs used during copy	*/
-	char		*nam, *cmp;	/* Ptrs used during comparison	*/
-	int32		i;		/* General loop index		*/
-	did32		lfnext;		/* Minor number of an unused	*/
-					/*    file pseudo-device	*/
-	struct	ldentry	*ldptr;		/* Ptr to an entry in directory	*/
-	struct	lflcblk	*lfptr;		/* Ptr to open file table entry	*/
-	bool8		found;		/* Was the name found?		*/
-	int32	retval;			/* Value returned from function	*/
-	int32	mbits;			/* Mode bits			*/
+    struct  lfdir   *dirptr;      /* Ptr to in-memory directory   */
+    char            *from, *to;   /* Ptrs used during copy        */
+    char            *nam, *cmp;   /* Ptrs used during comparison  */
+    int32           i;            /* General loop index           */
+    did32           lfnext;       /* Minor number of an unused    */
+                                  /*    file pseudo-device        */
+    struct  ldentry *ldptr;       /* Ptr to an entry in directory */
+    struct  lflcblk *lfptr;       /* Ptr to open file table entry */
+    bool8           found;        /* Was the name found?          */
+    int32           retval;       /* Value returned from function */
+    int32           mbits;        /* Mode bits                    */
 
-	proctab[currpid].errno = ENONE;
+    proctab[currpid].errno = ENONE;
 
-	/* Check length of name file (leaving space for NULLCH) */
+    /* Check length of name file (leaving space for NULLCH) */
 
-	from = name;
-	for (i=0; i< LF_NAME_LEN; i++) {
-		if (*from++ == NULLCH) {
-			break;
-		}
-	}
-	if (i >= LF_NAME_LEN) {		/* Name is too long */
-		proctab[currpid].errno = ENAMETOOLONG;
-		return SYSERR;
-	}
+    from = name;
+    for (i = 0; i < LF_NAME_LEN; i++) {
+        if (*from++ == NULLCH) {
+            break;
+        }
+    }
+    if (i >= LF_NAME_LEN) {       /* Name is too long */
+        proctab[currpid].errno = ENAMETOOLONG;
+        return SYSERR;
+    }
 
-	/* Parse mode argument and convert to binary */
+    /* Parse mode argument and convert to binary */
 
-	mbits = lfgetmode(mode);
-	if (mbits == SYSERR) {
-		proctab[currpid].errno = EINVAL;	/* bad mode */
-		return SYSERR;
-	}
+    mbits = lfgetmode(mode);
+    if (mbits == SYSERR) {
+        proctab[currpid].errno = EINVAL; /* bad mode */
+        return SYSERR;
+    }
 
-	/* If named file is already open, return SYSERR */
+    /* If named file is already open, return SYSERR */
 
-	lfnext = SYSERR;
-	for (i=0; i<Nlfl; i++) {	/* Search file pseudo-devices	*/
-		lfptr = &lfltab[i];
-		if (lfptr->lfstate == LF_FREE) {
-			if (lfnext == SYSERR) {
-				lfnext = i; /* Record index */
-			}
-			continue;
-		}
+    lfnext = SYSERR;
+    for (i = 0; i < Nlfl; i++) {   /* Search file pseudo-devices */
+        lfptr = &lfltab[i];
+        if (lfptr->lfstate == LF_FREE) {
+            if (lfnext == SYSERR) {
+                lfnext = i;       /* Record index */
+            }
+            continue;
+        }
 
-		/* Compare requested name to name of open file */
+        /* Compare requested name to name of open file */
 
-		nam = name;
-		cmp = lfptr->lfname;
-		while(*nam != NULLCH) {
-			if (*nam != *cmp) {
-				break;
-			}
-			nam++;
-			cmp++;
-		}
+        nam = name;
+        cmp = lfptr->lfname;
+        while (*nam != NULLCH) {
+            if (*nam != *cmp) {
+                break;
+            }
+            nam++;
+            cmp++;
+        }
 
-		/* See if comparison succeeded */
+        /* See if comparison succeeded */
 
-		if ( (*nam==NULLCH) && (*cmp == NULLCH) ) {
-			proctab[currpid].errno = EISOPEN;
-			return SYSERR;
-		}
-	}
-	if (lfnext == SYSERR) {	/* No slave file devices are available	*/
-		proctab[currpid].errno = ENOSLAVE;
-		return SYSERR;
-	}
+        if ((*nam == NULLCH) && (*cmp == NULLCH)) {
+            proctab[currpid].errno = EISOPEN;
+            return SYSERR;
+        }
+    }
+    if (lfnext == SYSERR) {       /* No slave file devices available */
+        proctab[currpid].errno = ENOSLAVE;
+        return SYSERR;
+    }
 
-	/* Obtain copy of directory if not already present in memory	*/
+    /* Obtain copy of directory if not already present in memory */
 
-	dirptr = &Lf_data.lf_dir;
-	wait(Lf_data.lf_mutex);
-	if (! Lf_data.lf_dirpresent) {
-	    retval = read(Lf_data.lf_dskdev,(char *)dirptr,LF_AREA_DIR);
-	    if (retval == SYSERR ) {
-		signal(Lf_data.lf_mutex);
-		return SYSERR;
-	    }
-	    /*-----------------------------------*/
-	    /* Verify presence of "magic" number */
-	    /*-----------------------------------*/
-	    if (dirptr->lfd_magic[0] != 'L' ||
-	        dirptr->lfd_magic[1] != 'F' ||
-	        dirptr->lfd_magic[2] != 'S' ||
-	        dirptr->lfd_magic[3] != 'Y') {
-		proctab[currpid].errno = EBADMAGIC;
-		signal(Lf_data.lf_mutex);
-		return SYSERR;
-	    }
-	    Lf_data.lf_dirpresent = TRUE;
-	}
+    dirptr = &Lf_data.lf_dir;
+    wait(Lf_data.lf_mutex);
+    fs_cs_enter();
 
-	/* Search directory to see if file exists */
+    if (!Lf_data.lf_dirpresent) {
+        retval = read(Lf_data.lf_dskdev, (char *)dirptr, LF_AREA_DIR);
+        if (retval == SYSERR) {
+            fs_cs_exit();
+            signal(Lf_data.lf_mutex);
+            return SYSERR;
+        }
 
-	found = FALSE;
-	for (i=0; i<dirptr->lfd_nfiles; i++) {
-		ldptr = &dirptr->lfd_files[i];
-		nam = name;
-		cmp = ldptr->ld_name;
-		while(*nam != NULLCH) {
-			if (*nam != *cmp) {
-				break;
-			}
-			nam++;
-			cmp++;
-		}
-		if ( (*nam==NULLCH) && (*cmp==NULLCH) ) { /* Name found	*/
-			found = TRUE;
-			break;
-		}
-	}
+        /* Verify presence of "magic" number */
 
-	/* Case #1 - file is not in directory (i.e., does not exist)	*/
+        if (dirptr->lfd_magic[0] != 'L' ||
+            dirptr->lfd_magic[1] != 'F' ||
+            dirptr->lfd_magic[2] != 'S' ||
+            dirptr->lfd_magic[3] != 'Y') {
 
-	if (! found) {
-		if (mbits & LF_MODE_O) {	/* File *must* exist	*/
-			proctab[currpid].errno = ENOENT;
-			signal(Lf_data.lf_mutex);
-			return SYSERR;
-		}
+            proctab[currpid].errno = EBADMAGIC;
+            fs_cs_exit();
+            signal(Lf_data.lf_mutex);
+            return SYSERR;
+        }
 
-		/* Take steps to create new file and add to directory	*/
+        Lf_data.lf_dirpresent = TRUE;
+    }
 
-		/* Verify that space remains in the directory */
+    /* Search directory to see if file exists */
 
-		if (dirptr->lfd_nfiles >= LF_NUM_DIR_ENT) {
-			signal(Lf_data.lf_mutex);
-			proctab[currpid].errno = ENOSPC;
-			return SYSERR;
-		}
+    found = FALSE;
+    for (i = 0; i < dirptr->lfd_nfiles; i++) {
+        ldptr = &dirptr->lfd_files[i];
+        nam = name;
+        cmp = ldptr->ld_name;
+        while (*nam != NULLCH) {
+            if (*nam != *cmp) {
+                break;
+            }
+            nam++;
+            cmp++;
+        }
+        if ((*nam == NULLCH) && (*cmp == NULLCH)) { /* Name found */
+            found = TRUE;
+            break;
+        }
+    }
 
-		/* Allocate next dir. entry & initialize to empty file	*/
+    /* Case #1 - file is not in directory */
 
-		ldptr = &dirptr->lfd_files[dirptr->lfd_nfiles++];
-		ldptr->ld_size = 0;
-		from = name;
-		to = ldptr->ld_name;
-		while ( (*to++ = *from++) != NULLCH ) {
-			;
-		}
-		ldptr->ld_ilist = LF_INULL;
+    if (!found) {
+        if (mbits & LF_MODE_O) {  /* File must exist */
+            proctab[currpid].errno = ENOENT;
+            fs_cs_exit();
+            signal(Lf_data.lf_mutex);
+            return SYSERR;
+        }
 
-	/* Case #2 - file is in directory (i.e., already exists)	*/
+        /* Verify that space remains in the directory */
 
-	} else if (mbits & LF_MODE_N) {		/* File must not exist	*/
-			signal(Lf_data.lf_mutex);
-			proctab[currpid].errno = EEXIST;
-			return SYSERR;
-	}
+        if (dirptr->lfd_nfiles >= LF_NUM_DIR_ENT) {
+            fs_cs_exit();
+            signal(Lf_data.lf_mutex);
+            proctab[currpid].errno = ENOSPC;
+            return SYSERR;
+        }
 
-	/* Initialize the local file pseudo-device */
+        /* Allocate next directory entry */
 
-	lfptr = &lfltab[lfnext];
-	lfptr->lfstate = LF_USED;
-	lfptr->lfdirptr = ldptr;	/* Point to directory entry	*/
-	lfptr->lfmode = mbits & LF_MODE_RW;
+        ldptr = &dirptr->lfd_files[dirptr->lfd_nfiles++];
+        ldptr->ld_size = 0;
+        from = name;
+        to = ldptr->ld_name;
+        while ((*to++ = *from++) != NULLCH) {
+            ;
+        }
+        ldptr->ld_ilist = LF_INULL;
 
-	/* File starts at position 0 */
+    /* Case #2 - file exists */
 
-	lfptr->lfpos     = 0;
+    } else if (mbits & LF_MODE_N) { /* File must not exist */
+        proctab[currpid].errno = EEXIST;
+        fs_cs_exit();
+        signal(Lf_data.lf_mutex);
+        return SYSERR;
+    }
 
-	to = lfptr->lfname;
-	from = name;
-	while ( (*to++ = *from++) != NULLCH ) {
-		;
-	}
+    /* Initialize the local file pseudo-device */
 
-	/* Neither index block nor data block are initially valid	*/
+    lfptr = &lfltab[lfnext];
+    lfptr->lfstate = LF_USED;
+    lfptr->lfdirptr = ldptr;
+    lfptr->lfmode = mbits & LF_MODE_RW;
 
-	lfptr->lfinum    = LF_INULL;
-	lfptr->lfdnum    = LF_DNULL;
+    lfptr->lfpos = 0;
 
-	/* Initialize byte pointer to address beyond the end of the	*/
-	/*	buffer (i.e., invalid pointer triggers setup)		*/
+    to = lfptr->lfname;
+    from = name;
+    while ((*to++ = *from++) != NULLCH) {
+        ;
+    }
 
-	lfptr->lfbyte = &lfptr->lfdblock[LF_BLKSIZ];
-	lfptr->lfibdirty = FALSE;
-	lfptr->lfdbdirty = FALSE;
+    lfptr->lfinum = LF_INULL;
+    lfptr->lfdnum = LF_DNULL;
 
-	signal(Lf_data.lf_mutex);
+    lfptr->lfbyte = &lfptr->lfdblock[LF_BLKSIZ];
+    lfptr->lfibdirty = FALSE;
+    lfptr->lfdbdirty = FALSE;
 
-	return lfptr->lfdev;
+    // NEW: Initialize per-file mutex
+    lfptr->lfmutex = semcreate(1);
+    
+    if (lfptr->lfmutex == SYSERR) {
+        // roll back and fail cleanly
+        lfptr->lfstate = LF_FREE;
+        proctab[currpid].errno = ENOSLAVE;
+        fs_cs_exit();
+        signal(Lf_data.lf_mutex);
+        return SYSERR;
+    }
+
+    fs_cs_exit();
+    signal(Lf_data.lf_mutex);
+
+    return lfptr->lfdev;
+
 }

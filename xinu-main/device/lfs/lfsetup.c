@@ -1,122 +1,93 @@
 /* lfsetup.c - lfsetup */
 
 #include <xinu.h>
+#include "fsbench.h"
 
 /*------------------------------------------------------------------------
  * lfsetup  -  Set a file's index block and data block for the current
- *		 file position (assumes file mutex held)
+ *             file position (assumes per-file mutex held)
  *------------------------------------------------------------------------
  */
-status	lfsetup (
-	  struct lflcblk  *lfptr	/* Pointer to slave file device	*/
-	)
+status lfsetup(struct lflcblk *lfptr)
 {
-	dbid32	dnum;			/* Data block to fetch		*/
-	ibid32	ibnum;			/* I-block number during search	*/
-	struct	ldentry	*ldptr;		/* Ptr to file entry in dir.	*/
-	struct	lfiblk	*ibptr;		/* Ptr to in-memory index block	*/
-	uint32	newoffset;		/* Computed data offset for	*/
-					/*   next index block		*/
-	int32	dindex;			/* Index into array in an index	*/
-					/*   block			*/
+    dbid32          dnum;
+    ibid32          ibnum;
+    struct ldentry *ldptr;
+    struct lfiblk  *ibptr;
+    uint32          newoffset;
+    int32           dindex;
 
+    /* Per-file mutex (lfptr->lfmutex) is assumed held by caller */
+    fs_cs_enter();   /* still measure this as a critical section */
 
-	/* Obtain exclusive access to the directory */
+    ldptr = lfptr->lfdirptr;
+    ibptr = &lfptr->lfiblock;
 
-	wait(Lf_data.lf_mutex);
+    if (lfptr->lfibdirty || lfptr->lfdbdirty) {
+        lfflush(lfptr);
+    }
 
-	/* Get pointers to in-memory directory, file's entry in the	*/
-	/*	directory, and the in-memory index block		*/
+    ibnum = lfptr->lfinum;
 
-	ldptr = lfptr->lfdirptr;
-	ibptr = &lfptr->lfiblock;
+    if (ibnum == LF_INULL) {
+        ibnum = ldptr->ld_ilist;
 
-	/* If existing index block or data block changed, write to disk	*/
+        if (ibnum == LF_INULL) {
+            ibnum = lfiballoc();
+            lfibclear(ibptr, 0);
+            ldptr->ld_ilist = ibnum;
+            lfptr->lfibdirty = TRUE;
+        } else {
+            lfibget(Lf_data.lf_dskdev, ibnum, ibptr);
+        }
 
-	if (lfptr->lfibdirty || lfptr->lfdbdirty) {
-		lfflush(lfptr);
-	}
-	ibnum = lfptr->lfinum;		/* Get ID of curr. index block	*/
+        lfptr->lfinum = ibnum;
 
-	/* If there is no index block in memory (e.g., because the file	*/
-	/*	was just opened), either load the first index block of	*/
-	/*	the file or allocate a new first index block		*/
+    } else if (lfptr->lfpos < ibptr->ib_offset) {
 
-	if (ibnum == LF_INULL) {
+        ibnum = ldptr->ld_ilist;
+        lfibget(Lf_data.lf_dskdev, ibnum, ibptr);
+        lfptr->lfinum = ibnum;
+    }
 
-		/* Check directory entry to see if index block exists	*/
+    while ((lfptr->lfpos & ~LF_IMASK) > ibptr->ib_offset) {
 
-		ibnum = ldptr->ld_ilist;
-		if (ibnum == LF_INULL) { /* Empty file - get new i-block*/
-			ibnum = lfiballoc();
-			lfibclear(ibptr, 0);
-			ldptr->ld_ilist = ibnum;
-			lfptr->lfibdirty = TRUE;
-		} else {		/* Nonempty - read first i-block*/
-	 		lfibget(Lf_data.lf_dskdev, ibnum, ibptr);
-		}
-		lfptr->lfinum = ibnum;
+        ibnum = ibptr->ib_next;
 
-	/* Otherwise, if current file position has been moved to an	*/
-	/*   offset before the current index block, start at the	*/
-	/*   beginning of the index list for the file			*/
+        if (ibnum == LF_INULL) {
+            ibnum = lfiballoc();
+            ibptr->ib_next = ibnum;
+            lfibput(Lf_data.lf_dskdev, lfptr->lfinum, ibptr);
+            lfptr->lfinum = ibnum;
+            newoffset = ibptr->ib_offset + LF_IDATA;
+            lfibclear(ibptr, newoffset);
+            lfptr->lfibdirty = TRUE;
 
-	} else if (lfptr->lfpos < ibptr->ib_offset) {
+        } else {
+            lfibget(Lf_data.lf_dskdev, ibnum, ibptr);
+            lfptr->lfinum = ibnum;
+        }
 
-		/* Load initial index block for the file (we know that	*/
-		/*	at least one index block exists)		*/
-	
-		ibnum = ldptr->ld_ilist;
-		lfibget(Lf_data.lf_dskdev, ibnum, ibptr);
-		lfptr->lfinum = ibnum;
-	}
+        lfptr->lfdnum = LF_DNULL;
+    }
 
-	/* At this point, an index block is in memory, but may cover	*/
-	/*  an offset less than the current file position.  Loop until	*/
-	/*  the index block covers the current file position.		*/
+    dindex = (lfptr->lfpos & LF_IMASK) >> 9;
 
-	while ((lfptr->lfpos & ~LF_IMASK) > ibptr->ib_offset ) {
-		ibnum = ibptr->ib_next;
-		if (ibnum == LF_INULL) {
-			/* Allocate new index block to extend file */
-			ibnum = lfiballoc();
-			ibptr->ib_next = ibnum;
-			lfibput(Lf_data.lf_dskdev, lfptr->lfinum, ibptr);
-			lfptr->lfinum = ibnum;
-			newoffset = ibptr->ib_offset + LF_IDATA;
-			lfibclear(ibptr, newoffset);
-			lfptr->lfibdirty = TRUE;
-		} else {
-			lfibget(Lf_data.lf_dskdev, ibnum, ibptr);
-			lfptr->lfinum = ibnum;
-		}
-		lfptr->lfdnum = LF_DNULL; /* Invalidate old data block */
-	}
+    dnum = lfptr->lfiblock.ib_dba[dindex];
 
-	/* At this point, the index block in lfiblock covers the	*/
-	/*  current file position (i.e., position lfptr->lfpos).  The	*/
-	/*  next step consists of loading the correct data block.	*/
+    if (dnum == LF_DNULL) {
+        dnum = lfdballoc((struct lfdbfree *)&lfptr->lfdblock);
+        lfptr->lfiblock.ib_dba[dindex] = dnum;
+        lfptr->lfibdirty = TRUE;
 
-	dindex = (lfptr->lfpos & LF_IMASK) >> 9;
+    } else if (dnum != lfptr->lfdnum) {
+        read(Lf_data.lf_dskdev, (char *)lfptr->lfdblock, dnum);
+        lfptr->lfdbdirty = FALSE;
+    }
 
-	/* If data block index does not match current data block, read	*/
-	/*   the correct data block from disk				*/
+    lfptr->lfdnum = dnum;
+    lfptr->lfbyte = &lfptr->lfdblock[lfptr->lfpos & LF_DMASK];
 
-	dnum = lfptr->lfiblock.ib_dba[dindex];
-	if (dnum == LF_DNULL) {		/* Allocate new data block */
-		dnum = lfdballoc((struct lfdbfree *)&lfptr->lfdblock);
-		lfptr->lfiblock.ib_dba[dindex] = dnum;
-		lfptr->lfibdirty = TRUE;
-	} else if ( dnum != lfptr->lfdnum) {
-		read(Lf_data.lf_dskdev, (char *)lfptr->lfdblock, dnum);
-		lfptr->lfdbdirty = FALSE;
-	}
-	lfptr->lfdnum = dnum;
-
-	/* Use current file offset to set the pointer to the next byte	*/
-	/*   within the data block					*/
-
-	lfptr->lfbyte = &lfptr->lfdblock[lfptr->lfpos & LF_DMASK];
-	signal(Lf_data.lf_mutex);
-	return OK;
+    fs_cs_exit();
+    return OK;
 }
