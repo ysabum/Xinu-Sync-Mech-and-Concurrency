@@ -1,3 +1,15 @@
 xinu-main.zip
+
 xinu-main/compile/binaries
+xinu-main/compile/.defs
+xinu-main/compile/version
+xinu-main/compile/xinu
+xinu-main/compile/xinu.elf
+xinu-main/compile/xinu.map
+
 xinu-baseline/compile/binaries
+xinu-baseline/compile/.defs
+xinu-baseline/compile/version
+xinu-baseline/compile/xinu
+xinu-baseline/compile/xinu.elf
+xinu-baseline/compile/xinu.map

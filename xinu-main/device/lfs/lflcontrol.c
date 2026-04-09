@@ -19,12 +19,10 @@ devcall	lflcontrol (
 	/* Obtain exclusive use of the file */
 
 	lfptr = &lfltab[devptr->dvminor];
-	wait(lfptr->lfmutex);
 
 	/* If file is not open, return an error */
 
 	if (lfptr->lfstate != LF_USED) {
-		signal(lfptr->lfmutex);
 		return SYSERR;
 	}
 
@@ -35,19 +33,16 @@ devcall	lflcontrol (
 		wait(Lf_data.lf_mutex);
 		retval = lftruncate(lfptr);
 		signal(Lf_data.lf_mutex);
-		signal(lfptr->lfmutex);
 		return retval;	
 
 	case LF_CTL_SIZE:			/* Get the size of a file */
 		wait(Lf_data.lf_mutex);
 		retval = lfptr->lfdirptr->ld_size;
 		signal(Lf_data.lf_mutex);
-		signal(lfptr->lfmutex);
 		return retval;
 
 	default:
 		kprintf("lfcontrol: function %d not valid\n\r", func);
-		signal(lfptr->lfmutex);
 		return SYSERR;
 	}
 }

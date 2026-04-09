@@ -19,11 +19,11 @@ These kernels support experiments addressing the following research questions:
 
 1. **Concurrency Scaling (RQ1):** How does increasing the number of concurrent worker processes affect file-operation latency and aggregate throughput?
 
-2. **Access Pattern Effects (RQ2):** How do sequential, random, read-heavy, and write-heavy workloads stress different synchronization paths and shared metadata structures?
+2. **Access Pattern Effects (RQ2):** How do sequential, random, read-heavy, and write-heavy workloads stress different synchronization paths and shared metadata structure
 
-3. **Locking Granularity (RQ3):** How does replacing Xinu’s coarse-grained global directory lock with a per-file locking scheme affect scalability and contention?
+3. **Interrupt Masking Costs (RQ3):** How much time is spent inside interrupt-disabled critical sections, and how does this correlate with latency spikes under load?s?
 
-4. **Interrupt Masking Costs (RQ4):** How much time is spent inside interrupt-disabled critical sections, and how does this correlate with latency spikes under load?
+4. **Locking Granularity (RQ4):** How does replacing Xinu’s coarse-grained global directory lock with a per-file locking scheme affect scalability and contention?
 
 
 ## Running Experiments

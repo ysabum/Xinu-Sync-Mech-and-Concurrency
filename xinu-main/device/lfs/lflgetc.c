@@ -18,12 +18,10 @@ devcall	lflgetc (
 	/* Obtain exclusive use of the file */
 
 	lfptr = &lfltab[devptr->dvminor];
-	wait(lfptr->lfmutex);
 
 	/* If file is not open, return an error */
 
 	if (lfptr->lfstate != LF_USED) {
-		signal(lfptr->lfmutex);
 		proctab[currpid].errno = EBADF;
 		return SYSERR;
 	}
@@ -32,7 +30,6 @@ devcall	lflgetc (
 
 	ldptr = lfptr->lfdirptr;
 	if (lfptr->lfpos >= ldptr->ld_size) {
-		signal(lfptr->lfmutex);
 		return EOF;
 	}
 
@@ -48,6 +45,5 @@ devcall	lflgetc (
 
 	onebyte = 0xff & *lfptr->lfbyte++;
 	lfptr->lfpos++;
-	signal(lfptr->lfmutex);
 	return onebyte;
 }

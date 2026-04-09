@@ -8,25 +8,27 @@ struct	lfdata	Lf_data;
  * lfsinit  -  Initialize the local file system master device
  *------------------------------------------------------------------------
  */
-devcall	lfsinit (
-	  struct dentry *devptr		/* Entry in device switch table */
-	)
+devcall lfsinit(struct dentry *devptr)
 {
-	/* Assign ID of disk device that will be used */
+    /* Assign ID of disk device that will be used */
+    Lf_data.lf_dskdev = LF_DISK_DEV;
 
-	Lf_data.lf_dskdev = LF_DISK_DEV;
+    /* Create a mutual exclusion semaphore */
+    Lf_data.lf_mutex = semcreate(1);
 
-	/* Create a mutual exclusion semaphore */
+    /* Zero in-memory directory area (for debugging) */
+    memset((char *)&Lf_data.lf_dir, NULLCH, sizeof(struct lfdir));
 
-	Lf_data.lf_mutex = semcreate(1);
+    /* Initialize directory to "not present" in memory */
+    Lf_data.lf_dirpresent = Lf_data.lf_dirdirty = FALSE;
 
-	/* Zero in-memory directory area (for debugging) */
+    /* ---------------------------------------------- */
+    /* NEW: Initialize per-file mutexes for all slots */
+    /* ---------------------------------------------- */
+    int i;
+    for (i = 0; i < Nlfl; i++) {
+        lfltab[i].lfmutex = semcreate(1);
+    }
 
-	memset((char *)&Lf_data.lf_dir, NULLCH, sizeof(struct lfdir));
-
-	/* Initialize directory to "not present" in memory */
-
-	Lf_data.lf_dirpresent = Lf_data.lf_dirdirty = FALSE;
-
-	return OK;
+    return OK;
 }

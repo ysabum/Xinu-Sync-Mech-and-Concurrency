@@ -73,14 +73,15 @@ devcall lfsopen(
         }
 
         /* See if comparison succeeded */
-
-        if ((*nam == NULLCH) && (*cmp == NULLCH)) {
-            proctab[currpid].errno = EISOPEN;
-            return SYSERR;
-        }
+        // if ((*nam == NULLCH) && (*cmp == NULLCH)) {
+        //     proctab[currpid].errno = EISOPEN;
+        //     kprintf("lfsopen: pid=%d EISOPEN\n", currpid);
+        //     return SYSERR;
+        // }
     }
     if (lfnext == SYSERR) {       /* No slave file devices available */
         proctab[currpid].errno = ENOSLAVE;
+        kprintf("lfsopen: pid=%d ENOSLAVE\n", currpid); 
         return SYSERR;
     }
 
@@ -196,9 +197,8 @@ devcall lfsopen(
     lfptr->lfdbdirty = FALSE;
 
     // NEW: Initialize per-file mutex
-    lfptr->lfmutex = semcreate(1);
-    
     if (lfptr->lfmutex == SYSERR) {
+        kprintf("debug lfsopen.c 2");
         // roll back and fail cleanly
         lfptr->lfstate = LF_FREE;
         proctab[currpid].errno = ENOSLAVE;

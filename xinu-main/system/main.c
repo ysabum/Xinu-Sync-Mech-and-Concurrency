@@ -21,14 +21,14 @@ process	main(void)
 
 	
 	// Measure tick frequency for experiment documentation
-	kprintf("Measuring TSC frequency...\n");
+	// kprintf("Measuring TSC frequency...\n");
 
-	uint64 t1 = rdtsc();
-	sleep(1);
-	uint64 t2 = rdtsc();
+	// uint64 t1 = rdtsc();
+	// sleep(1);
+	// uint64 t2 = rdtsc();
 
-	uint64 cycles = t2 - t1;
-	kprintf("Cycles per second = %u\n", (uint32)cycles);
+	// uint64 cycles = t2 - t1;
+	// kprintf("Cycles per second = %u\n", (uint32)cycles);
 
 
 
