@@ -7,12 +7,15 @@
  * lfsopen - Open a file and allocate a local file pseudo-device
  *------------------------------------------------------------------------
  */
+
+
 devcall lfsopen(
          struct dentry *devptr,   /* Entry in device switch table */
          char *name,              /* Name of file to open         */
          char *mode               /* Mode chars: 'r' 'w' 'o' 'n'  */
         )
 {
+    kprintf("lfsopen: pid=%d entering\n", currpid);
     struct  lfdir   *dirptr;      /* Ptr to in-memory directory   */
     char            *from, *to;   /* Ptrs used during copy        */
     char            *nam, *cmp;   /* Ptrs used during comparison  */
@@ -73,14 +76,17 @@ devcall lfsopen(
         }
 
         /* See if comparison succeeded */
+        /* Comment out for single worker */
 
-        if ((*nam == NULLCH) && (*cmp == NULLCH)) {
-            proctab[currpid].errno = EISOPEN;
-            return SYSERR;
-        }
+        // if ((*nam == NULLCH) && (*cmp == NULLCH)) {
+        //     proctab[currpid].errno = EISOPEN;
+        //     kprintf("lfsopen: pid=%d EISOPEN\n", currpid);
+        //     return SYSERR;
+        // }
     }
     if (lfnext == SYSERR) {       /* No slave file devices available */
         proctab[currpid].errno = ENOSLAVE;
+        // kprintf("lfsopen: pid=%d ENOSLAVE\n", currpid); 
         return SYSERR;
     }
 

@@ -29,7 +29,7 @@
 /************************************************************************/
 
 #ifndef	Nlfl
-#define	Nlfl	1
+#define	Nlfl	32
 #endif
 
 /* Use the remote disk device if no disk is defined (file system  */

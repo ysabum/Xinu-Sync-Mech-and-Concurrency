@@ -8,41 +8,50 @@
  *             file position (assumes per-file mutex held)
  *------------------------------------------------------------------------
  */
-status lfsetup(struct lflcblk *lfptr)
+status lfsetup(
+        struct lflcblk *lfptr       /* Pointer to slave file device */
+    )   
 {
-    dbid32          dnum;
-    ibid32          ibnum;
-    struct ldentry *ldptr;
-    struct lfiblk  *ibptr;
-    uint32          newoffset;
-    int32           dindex;
+    dbid32      dnum;           /* Data block to fetch          */
+    ibid32      ibnum;          /* I-block number during search */
+    struct ldentry *ldptr;      /* Ptr to file entry in dir.    */
+    struct lfiblk *ibptr;       /* Ptr to in-memory index block */
+    uint32      newoffset;      /* Computed data offset         */
+    int32       dindex;         /* Index into array in i-block  */
 
     /* Per-file mutex (lfptr->lfmutex) is assumed held by caller */
+    // wait(lfptr->lfmutex);      // per-file lock
     fs_cs_enter();   /* still measure this as a critical section */
 
+    /* Get pointers to in-memory directory, file's entry in the
+       directory, and the in-memory index block */
     ldptr = lfptr->lfdirptr;
     ibptr = &lfptr->lfiblock;
 
+    /* If existing index block or data block changed, write to disk */
     if (lfptr->lfibdirty || lfptr->lfdbdirty) {
         lfflush(lfptr);
     }
 
     ibnum = lfptr->lfinum;
 
+    /* If no index block in memory, load or allocate first index block */
     if (ibnum == LF_INULL) {
+
         ibnum = ldptr->ld_ilist;
 
-        if (ibnum == LF_INULL) {
+        if (ibnum == LF_INULL) {    /* Empty file: allocate new i-block */
             ibnum = lfiballoc();
             lfibclear(ibptr, 0);
             ldptr->ld_ilist = ibnum;
             lfptr->lfibdirty = TRUE;
-        } else {
+        } else {                    /* Nonempty: read first i-block */
             lfibget(Lf_data.lf_dskdev, ibnum, ibptr);
         }
 
         lfptr->lfinum = ibnum;
 
+    /* If file position moved before current index block, restart chain */
     } else if (lfptr->lfpos < ibptr->ib_offset) {
 
         ibnum = ldptr->ld_ilist;
@@ -89,5 +98,7 @@ status lfsetup(struct lflcblk *lfptr)
     lfptr->lfbyte = &lfptr->lfdblock[lfptr->lfpos & LF_DMASK];
 
     fs_cs_exit();
+    // signal(lfptr->lfmutex);
+
     return OK;
 }
