@@ -68,8 +68,8 @@ fsbench testfile 4 1000 rw rand
 `device/lfl/lflcontrol.c`: ditto  
 
 ### Filesystem Initialization
-`device/lfs/lfscreate.c`: creates directory, free lists, and magic number
-`shell/xsh_mklfs.c`: user-facing mklfs command
+`device/lfs/lfscreate.c`: creates directory, free lists, and magic number  
+`shell/xsh_mklfs.c`: user-facing mklfs command  
 
 ---
 
