@@ -19,8 +19,7 @@ process	main(void)
 	resume(create(shell, 8192, 50, "shell", 1, CONSOLE));
 
 
-	
-	// Measure tick frequency for experiment documentation
+	// // Measure tick frequency for experiment documentation
 	// kprintf("Measuring TSC frequency...\n");
 
 	// uint64 t1 = rdtsc();
@@ -29,9 +28,6 @@ process	main(void)
 
 	// uint64 cycles = t2 - t1;
 	// kprintf("Cycles per second = %u\n", (uint32)cycles);
-
-
-
 
 
 	/* Wait for shell to exit and recreate it */

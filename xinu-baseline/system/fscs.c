@@ -2,10 +2,7 @@
  * -----------------------------------------------------------------------------
  * Global accounting of time spent in filesystem critical sections.
  *
- * RQ4: "How much time is spent inside interrupt-disabled critical sections,
- * and how does this correlate with latency spikes under load?"
- *
- * We approximate this by:
+ * This is approximated by:
  *  - Marking entry/exit of filesystem critical sections
  *    (e.g., regions protected by Lf_data.lf_mutex).
  *  - Using fs_getticks() to measure elapsed ticks per section.
@@ -18,9 +15,9 @@
 #include <xinu.h>
 #include "fsbench.h"
 
-static uint64 fs_cs_total_ticks = 0;     // cumulative ticks in critical sections
-static uint64 fs_cs_current_start = 0;   // start time of current section
-static bool8  fs_cs_active = FALSE;      // are we currently inside a section?
+static uint64 fs_cs_total_ticks = 0;     // Cumulative ticks in critical sections
+static uint64 fs_cs_current_start = 0;   // Start time of current section
+static bool8  fs_cs_active = FALSE;      // Are we currently inside a section?
 
 // Enter a filesystem critical section
 void fs_cs_enter(void)

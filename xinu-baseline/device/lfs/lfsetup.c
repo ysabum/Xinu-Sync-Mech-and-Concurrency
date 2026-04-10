@@ -19,7 +19,7 @@ status lfsetup(
     uint32      newoffset;      /* Computed data offset         */
     int32       dindex;         /* Index into array in i-block  */
 
-    /* Obtain exclusive access to the directory */
+    // Obtain exclusive access to the directory
     wait(Lf_data.lf_mutex);
     fs_cs_enter();
 

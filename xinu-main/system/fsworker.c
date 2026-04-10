@@ -1,14 +1,15 @@
 /* fsworker.c
-* -----------------------------------------------------------------------------
-* Worker processes and experiment driver for file system concurrency tests.
-* This module:
-*  - Defines worker processes that perform repeated file operations
-*  - Supports different workload types (read-only, write-only, read/write)
-*  - Supports sequential vs random access patterns
-*  - Calls into the metrics module to record latency and critical section time
-*  - Provides fs_run_experiment() to orchestrate multi-process experiments
-* ----------------------------------------------------------------------------- 
-*/
+ * -----------------------------------------------------------------------------
+ * Worker processes and experiment driver for file system concurrency tests.
+ * 
+ * This module:
+ *  - Defines worker processes that perform repeated file operations
+ *  - Supports different workload types (read-only, write-only, read/write)
+ *  - Supports sequential vs random access patterns
+ *  - Calls into the metrics module to record latency and critical section time
+ *  - Provides fs_run_experiment() to orchestrate multi-process experiments
+ * ----------------------------------------------------------------------------- 
+ */
 
 #include <xinu.h>
 #include <stdio.h>
@@ -199,7 +200,5 @@ syscall fs_run_experiment(
     }
 
     sleep(10);
-
     return OK;
 }
-

@@ -8,7 +8,9 @@ struct	lfdata	Lf_data;
  * lfsinit  -  Initialize the local file system master device
  *------------------------------------------------------------------------
  */
-devcall lfsinit(struct dentry *devptr)
+devcall lfsinit (
+        struct dentry *devptr       // Entry in device switch table
+    )
 {
     /* Assign ID of disk device that will be used */
     Lf_data.lf_dskdev = LF_DISK_DEV;
@@ -22,9 +24,10 @@ devcall lfsinit(struct dentry *devptr)
     /* Initialize directory to "not present" in memory */
     Lf_data.lf_dirpresent = Lf_data.lf_dirdirty = FALSE;
 
-    /* ---------------------------------------------- */
-    /* NEW: Initialize per-file mutexes for all slots */
-    /* ---------------------------------------------- */
+    /* -------------------------------------------
+     * Initialize per-file mutexes for all slots 
+     * -------------------------------------------
+     */
     int i;
     for (i = 0; i < Nlfl; i++) {
         lfltab[i].lfmutex = semcreate(1);

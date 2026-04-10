@@ -1,12 +1,13 @@
 /* fsmetrics.c
-* -----------------------------------------------------------------------------
-* Kernel-side metrics collection for file system concurrency experiments.
-* This module:
-*  - Stores per-operation samples (latency, critical section time, flags)
-*  - Maintains aggregate statistics
-*  - Provides a dump function to export data via the console
-* ----------------------------------------------------------------------------- 
-*/
+ * -----------------------------------------------------------------------------
+ * Kernel-side metrics collection for file system concurrency experiments.
+ * 
+ * This module:
+ *  - Stores per-operation samples (latency, critical section time, flags)
+ *  - Maintains aggregate statistics
+ *  - Provides a dump function to export data via the console
+ * ----------------------------------------------------------------------------- 
+ */
 
 #include <xinu.h>
 #include <stdio.h>

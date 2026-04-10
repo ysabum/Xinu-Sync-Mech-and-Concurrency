@@ -28,7 +28,7 @@ model_interact_summary$model <- "Interaction Model"
 all_models <- rbind(model_summary, model_interact_summary)
 write.csv(all_models, "finegrained_regression_summaries.csv")
 
-# Plot
+# Regression Plot
 df_zoom <- df3 %>% filter(latency_ticks < 200000)
 
 ggplot(df_zoom, aes(x = cs_ticks, y = latency_ticks, color = op)) +
@@ -43,6 +43,7 @@ ggplot(df_zoom, aes(x = cs_ticks, y = latency_ticks, color = op)) +
 
 ggsave("finegrained_latency_vs_cs_unified.png", width = 8, height = 6, dpi = 300)
 
+# Latency distribution Plot
 ggplot(df3, aes(x = latency_ticks, fill = op)) +
   geom_density(alpha = 0.4) +
   scale_x_log10() +

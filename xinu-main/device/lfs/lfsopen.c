@@ -196,9 +196,8 @@ devcall lfsopen(
     lfptr->lfibdirty = FALSE;
     lfptr->lfdbdirty = FALSE;
 
-    // NEW: Initialize per-file mutex
+    // Initialize per-file mutex
     if (lfptr->lfmutex == SYSERR) {
-        kprintf("debug lfsopen.c 2");
         // roll back and fail cleanly
         lfptr->lfstate = LF_FREE;
         proctab[currpid].errno = ENOSLAVE;

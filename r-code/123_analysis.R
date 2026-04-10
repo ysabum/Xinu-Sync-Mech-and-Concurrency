@@ -55,7 +55,7 @@ ggplot(df_rw, aes(x = op, y = latency_ticks, fill = op)) +
        y = "Latency (ticks)") +
   theme_minimal()
 
-# Scatterplot: Latency vs Critical Section Time (RQ4)
+# Scatterplot: Latency vs Critical Section Time (RQ3)
 ggplot(df, aes(x = cs_ticks, y = latency_ticks, color = op)) +
   geom_point(alpha = 0.4) +
   geom_smooth(method = "lm", se = FALSE) +
@@ -67,13 +67,13 @@ ggplot(df, aes(x = cs_ticks, y = latency_ticks, color = op)) +
        color = "Operation") +
   theme_minimal()
 
-# Correlation Between Latency and Critical Section Time (RQ4)
+# Correlation Between Latency and Critical Section Time (RQ3)
 cor(df$latency_ticks, df$cs_ticks)
 
 df_write <- df %>% filter(op == "WRITE")
 cor(df_write$latency_ticks, df_write$cs_ticks)
 
-# Histogram of Critical Section Time (RQ4)
+# Histogram of Critical Section Time (RQ3)
 ggplot(df, aes(x = cs_ticks)) +
   geom_histogram(bins = 60, fill = "darkred", alpha = 0.7) +
   scale_x_continuous(labels = scales::comma) +
@@ -92,4 +92,3 @@ ggplot(df_write, aes(x = latency_ticks)) +
        x = "Latency (ticks)",
        y = "Density") +
   theme_minimal()
-

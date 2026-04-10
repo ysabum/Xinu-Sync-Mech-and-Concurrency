@@ -1,18 +1,22 @@
 /* fsdirlock.c
-* -----------------------------------------------------------------------------
-* Optional fine-grained lock for directory metadata.
-* This module provides a simple semaphore-based lock that can be used
-* to protect directory entry updates instead of relying solely on
-* interrupt disabling. This supports the "fine-grained lock" variant
-* described in the methodology.
-* -----------------------------------------------------------------------------
-*/
+ * -----------------------------------------------------------------------------
+ * Optional fine-grained lock for directory metadata.
+ * This module provides a simple semaphore-based lock that can be used
+ * to protect directory entry updates instead of relying solely on
+ * interrupt disabling. This supports the "fine-grained lock" variant
+ * described in the methodology.
+ * 
+ * Note:
+ *   - This module was actually not used for this project. 
+ * -----------------------------------------------------------------------------
+ */
 
 #include <xinu.h>
 #include "fsbench.h"
 
-// Compile-time flag to enable fine-grained directory locking
-// Define FS_FINE_GRAINED_DIRLOCK in your build to enable.
+/* Compile-time flag to enable fine-grained directory locking
+ * Define FS_FINE_GRAINED_DIRLOCK in your build to enable.
+ */
 #ifdef FS_FINE_GRAINED_DIRLOCK
 
 static sid32 fs_dir_sem;

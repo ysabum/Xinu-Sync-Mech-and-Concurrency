@@ -6,14 +6,15 @@
  * lflread  -  Read from a previously opened local file
  *------------------------------------------------------------------------
  */
-devcall lflread(
-      struct dentry *devptr,
-      char *buff,
-      int32 count
-    )
+devcall	lflread (
+	  struct dentry *devptr,	/* Entry in device switch table */
+	  char	*buff,			    /* Buffer to hold bytes		*/
+	  int32	count			    /* Max bytes to read		*/
+	)
 {
-    uint32      numread;
-    int32       nxtbyte;
+	uint32	numread;		/* Number of bytes read		*/
+	int32	nxtbyte;		/* Character or SYSERR/EOF	*/
+
     struct lflcblk *lfptr;
 
     if (count < 0) {
@@ -25,12 +26,14 @@ devcall lflread(
     lfptr = &lfltab[devptr->dvminor];
     wait(lfptr->lfmutex);
 
+    /* Iterate and use lflgetc to read indivdiual bytes */
+
     for (numread = 0; numread < count; numread++) {
         nxtbyte = lflgetc(devptr);
         if (nxtbyte == SYSERR) {
             signal(lfptr->lfmutex);
             return SYSERR;
-        } else if (nxtbyte == EOF) {
+        } else if (nxtbyte == EOF) {    /* EOF before finished */
             signal(lfptr->lfmutex);
             if (numread == 0) {
                 return EOF;

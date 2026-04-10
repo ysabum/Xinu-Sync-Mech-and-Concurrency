@@ -1,12 +1,12 @@
 /* fsbench.h
-* -----------------------------------------------------------------------------
-* Shared definitions for the Xinu file system concurrency benchmark.
-* This header defines:
-*  - Operation types and workload modes
-*  - Metrics structures and flags
-*  - Function prototypes for metrics, workers, and experiments
-* -----------------------------------------------------------------------------
-*/ 
+ * -----------------------------------------------------------------------------
+ * Shared definitions for the Xinu file system concurrency benchmark.
+ * This header defines:
+ *  - Operation types and workload modes
+ *  - Metrics structures and flags
+ *  - Function prototypes for metrics, workers, and experiments
+ * -----------------------------------------------------------------------------
+ */ 
 
 #ifndef _FSBENCH_H_
 #define _FSBENCH_H_
@@ -67,7 +67,7 @@ void fs_dirlock_acquire(void);
 void fs_dirlock_release(void);
 
 
-// Xinu does not provide getticks()
+// Since Xinu does not provide getticks()
 static inline uint64 fs_getticks(void)
 {
     return rdtsc();
@@ -80,7 +80,6 @@ static inline uint64 fs_getticks(void)
 * fs_cs_snapshot() returns the global cumulative ticks spent
 * in those critical sections so far.
 */
-
 void   fs_cs_enter(void);
 void   fs_cs_exit(void);
 uint32 fs_cs_snapshot(void);

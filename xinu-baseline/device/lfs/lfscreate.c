@@ -1,6 +1,5 @@
 /* lfscreate.c - lfscreate */
-
-/* 10/16/2016 - Set the in memory and dirty flags to false. */
+/* Set the in memory and dirty flags to false. */
 
 #include <xinu.h>
 #include <ramdisk.h>
