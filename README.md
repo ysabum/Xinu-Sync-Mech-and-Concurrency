@@ -25,7 +25,6 @@ The repository also includes the folders:
 ---
 
 ## Running Experiments
-### Baseline Kernel (`xinu-baseline`)
 This kernel uses Xinu’s original synchronization model:
 - All metadata updates acquire the global directory mutex  
   `Lf_data.lf_mutex`
